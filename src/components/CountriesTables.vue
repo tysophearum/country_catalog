@@ -1,5 +1,6 @@
 <script>
 import Fuse from 'fuse.js';
+import Loader from './Loader.vue';
 export default {
     data() {
         return {
@@ -11,43 +12,44 @@ export default {
             itemsPerPage: 25,
             currentPage: 1,
             totalPages: 0,
-            asc: null
+            asc: null,
+            loading: true
         };
     },
     mounted() {
-        this.fetchData()
+        this.fetchData();
     },
     watch: {
         searchQuery: function () {
-            this.handleSearch()
+            this.handleSearch();
         }
     },
     methods: {
         sortAscName: function () {
             this.results.sort((a, b) => a.name.official.localeCompare(b.name.official));
-            this.paginatedItems()
-            this.asc = true
+            this.paginatedItems();
+            this.asc = true;
         },
         sortDescName: function () {
             this.results.sort((a, b) => b.name.official.localeCompare(a.name.official));
-            this.paginatedItems()
-            this.asc = false
+            this.paginatedItems();
+            this.asc = false;
         },
         prevPage: function () {
             if (this.currentPage > 1) {
                 this.currentPage--;
-                this.paginatedItems()
+                this.paginatedItems();
             }
         },
         nextPage: function () {
             if (this.currentPage < this.totalPages) {
                 this.currentPage++;
-                this.paginatedItems()
+                this.paginatedItems();
             }
         },
         goToPage: function (page) {
             this.currentPage = page;
-            this.paginatedItems()
+            this.paginatedItems();
         },
         paginatedItems: function () {
             const startIndex = (this.currentPage - 1) * this.itemsPerPage;
@@ -59,33 +61,36 @@ export default {
                 .then(response => response.json())
                 .then(data => this.data = data)
                 .then(() => {
-                    this.results = JSON.parse(JSON.stringify(this.data));
-                    this.sortAscName()
-                    this.fuse = new Fuse(this.data, {
-                        keys: ['name.official'], // Adjust the path to the nested property
-                        threshold: 0.3, // Adjust the threshold as needed
-                    })
-                    this.totalPages = Math.ceil(this.results.length / this.itemsPerPage);
-                    this.paginatedItems()
-                })
+                this.results = JSON.parse(JSON.stringify(this.data));
+                this.sortAscName();
+                this.fuse = new Fuse(this.data, {
+                    keys: ['name.official'], // Adjust the path to the nested property
+                    threshold: 0.3, // Adjust the threshold as needed
+                });
+                this.totalPages = Math.ceil(this.results.length / this.itemsPerPage);
+                this.paginatedItems();
+                this.loading = false
+            });
         },
         handleSearch: function () {
             if (this.searchQuery != "") {
-                this.results = this.fuse.search(this.searchQuery).map(result => result.item)
+                this.results = this.fuse.search(this.searchQuery).map(result => result.item);
                 this.totalPages = Math.ceil(this.results.length / this.itemsPerPage);
-                this.currentPage = 1
-                this.paginatedItems()
-            } else if (this.searchQuery == "") {
+                this.currentPage = 1;
+                this.paginatedItems();
+            }
+            else if (this.searchQuery == "") {
                 this.results = JSON.parse(JSON.stringify(this.data));
-                this.sortAscName()
+                this.sortAscName();
                 this.totalPages = Math.ceil(this.results.length / this.itemsPerPage);
             }
         }
-    }
-
+    },
+    components: { Loader }
 }
 </script>
 <template>
+    <Loader v-if="loading"/>
     <div class=" w-[95vw] min-w-[1000px] overflow-scroll">
         <input v-on:change="search" v-model="searchQuery" type="search" class="bg-purple-white shadow rounded border-0 p-3 my-2 w-1/3" placeholder="Search by name...">
         <div class="">
